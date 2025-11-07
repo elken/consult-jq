@@ -1,0 +1,69 @@
+#+TITLE: consult-jq
+#+AUTHOR: Ellis Kenyő
+
+* Overview
+
+A minimal integration between [[https://stedolan.github.io/jq/][jq]] and [[https://github.com/minad/consult][consult]] for interactive JSON filtering in Emacs.
+
+This package provides a live-updating interface to filter JSON data in
+your current buffer. As you type a jq filter in the minibuffer, the
+results are displayed with syntax highlighting. Press ~RET~ to copy the
+result to the kill ring.
+
+* Requirements
+
+- Emacs 29.1 or newer
+- [[https://jqlang.org/download/][jq]]
+
+* Installation
+
+** Using straight.el and use-package
+
+#+BEGIN_SRC emacs-lisp
+(use-package consult-jq
+  :straight (:host github :repo "elken/consult-jq")
+  :commands (consult-jq))
+#+END_SRC
+
+** Manual
+
+1. Clone the repository
+2. Add to your load path
+3. Require the package
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'load-path "/path/to/consult-jq")
+(require 'consult-jq)
+#+END_SRC
+
+* Usage
+
+Open a JSON file and run:
+
+#+BEGIN_SRC
+M-x consult-jq
+#+END_SRC
+
+Type a jq filter to see the results update in real-time. Press ~RET~ to copy the result to the kill ring.
+
+[[file:.github/assets/demo.gif]]
+
+** Shorthand filters
+
+The package provides several shorthand filters for common operations:
+
+- ~keys~ - Show all object keys
+- ~items~ - Show keys as separate items
+- ~values~ - Show all values
+- ~types~ - Show types of all values
+
+** Customization
+
+You can customize the available shorthand filters:
+
+#+BEGIN_SRC emacs-lisp
+(setq consult-jq-filter-alist
+      '(("items" . "keys[]")
+        ("types" . "map_values(type)")
+        ("count" . "length")))  ;; Added custom shorthand
+#+END_SRC
