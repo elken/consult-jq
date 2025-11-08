@@ -5,6 +5,8 @@
 
 A minimal integration between [[https://stedolan.github.io/jq/][jq]] and [[https://github.com/minad/consult][consult]] for interactive JSON filtering in Emacs.
 
+https://github.com/user-attachments/assets/5d2f1b67-6f9a-448f-88e3-29a6898ebd7e
+
 This package provides a live-updating interface to filter JSON data in
 your current buffer. As you type a jq filter in the minibuffer, the
 results are displayed with syntax highlighting. Press ~RET~ to copy the
@@ -45,8 +47,6 @@ M-x consult-jq
 #+END_SRC
 
 Type a jq filter to see the results update in real-time. Press ~RET~ to copy the result to the kill ring.
-
-[[file:.github/assets/demo.mp4]]
 
 ** Shorthand filters
 
