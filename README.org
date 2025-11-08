@@ -46,7 +46,7 @@ M-x consult-jq
 
 Type a jq filter to see the results update in real-time. Press ~RET~ to copy the result to the kill ring.
 
-[[file:.github/assets/demo.gif]]
+[[file:.github/assets/demo.mp4]]
 
 ** Shorthand filters
 
