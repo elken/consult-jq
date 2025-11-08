@@ -48,7 +48,9 @@
   :group 'convenience)
 
 (defcustom consult-jq-filter-alist
-  '(("items" . "keys[]")
+  '(("keys" . "keys")
+    ("items" . "keys[]")
+    ("values" . "values")
     ("types" . "map_values(type)"))
   "Alist mapping shorthand jq filters to their actual implementations.
 Keys are the shorthand names, values are the actual jq filter expressions."
@@ -62,10 +64,10 @@ Keys are the shorthand names, values are the actual jq filter expressions."
 
 (defun consult-jq--process-filter (filter)
   "Process jq FILTER string, applying shorthand expansions if needed.
-If FILTER matches a key in `consult-jq--filter-alist', use the corresponding value.
+If FILTER matches a key in `consult-jq-filter-alist', use the corresponding value.
 If FILTER starts with '.', use it as-is.
 Otherwise, prepend '.' to FILTER."
-  (or (cdr (assoc filter consult-jq--filter-alist))
+  (or (cdr (assoc filter consult-jq-filter-alist))
       (if (string-prefix-p "." filter)
           filter
         (concat "." filter))))
@@ -76,12 +78,14 @@ Returns nil if FILTER is empty or if jq execution fails."
   (when (and filter (not (string-empty-p filter)))
     (with-temp-buffer
       (insert json)
-      (condition-case nil
+      (condition-case err
           (progn
             (call-process-region (point-min) (point-max)
                                 consult-jq-executable t t nil (consult-jq--process-filter filter))
             (buffer-string))
-        (error nil)))))
+        (error
+         (message "jq error: %s" (error-message-string err))
+         nil)))))
 
 (defun consult-jq--highlight-json (json-string)
   "Apply syntax highlighting to JSON-STRING and return the highlighted text."
@@ -124,49 +128,23 @@ Supports shorthand filters defined in `consult-jq-filter-alist'."
     (user-error "Buffer doesn't contain valid JSON"))
 
   (let* ((json (buffer-substring-no-properties (point-min) (point-max)))
-         (latest-result nil))
-    (let ((filter (consult--read
-                   (consult--dynamic-collection
-                    (lambda (input)
-                      (unless (string-empty-p input)
-                        (when-let* ((result (consult-jq--get-result json input)))
-                          (setq latest-result result)
-                          (list (propertize " " 'jq-result result))))))
-                   :prompt "Enter jq query: "
-                   :initial ""
-                   :require-match nil
-                   :sort nil
-                   :annotate (lambda (cand)
-                               (when-let ((result (get-text-property 0 'jq-result cand)))
-                                 (consult-jq--highlight-json result))))))
-      (when latest-result
-        (kill-new latest-result)
-        (message "jq result copied to kill ring")))))
-
-;;;###autoload
-(put 'consult-jq 'function-documentation '(consult-jq--function-docstring))
-
-;; Add execute-extended-command-for-buffer support
-(put 'consult-jq 'command-modes '(json-mode json-ts-mode js-json-mode))
-
-;; Docstring function that includes any additional info
-(defun consult-jq--function-docstring ()
-  "Return the complete docstring for the `consult-jq' function."
-  (concat
-   "Filter JSON in current buffer using jq with live preview.
-As you type a jq filter expression in the minibuffer, the filtered JSON
-is shown with syntax highlighting. Press RET to copy the result to the
-kill ring.
-
-Supports shorthand filters defined in `consult-jq-filter-alist':
-"
-   (mapconcat
-    (lambda (entry)
-      (format "- '%s': %s" (car entry) (cdr entry)))
-    consult-jq-filter-alist
-    "\n")))
-
-(provide 'consult-jq)
+         (results-map (make-hash-table :test 'equal))
+         (filter (consult--read
+                  (consult--dynamic-collection
+                      (lambda (input)
+                        (let ((result (consult-jq--get-result json input)))
+                          (puthash input result results-map)
+                          (list (propertize input 'display "")))))
+                  :prompt "Enter jq query: "
+                  :initial ""
+                  :require-match nil
+                  :sort nil
+                  :annotate (lambda (cand)
+                              (when-let ((result (gethash cand results-map)))
+                                (consult-jq--highlight-json result))))))
+    (when-let ((result (gethash filter results-map)))
+      (kill-new result)
+      (message "jq result copied to kill ring"))))
 
 (provide 'consult-jq)
 ;;; consult-jq.el ends here
